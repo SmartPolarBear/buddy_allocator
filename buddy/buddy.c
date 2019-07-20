@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-20 23:08:41
+ * @ Modified time: 2019-07-20 23:20:17
  * @ Description:buddy allocator
  */
 
@@ -12,8 +12,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define LEFTCHILD(index) ((index)*2)
-#define RIGHTCHILD(index) ((index)*2 + 1)
+#define LEFTCHILD(index) ((index)*2+1)
+#define RIGHTCHILD(index) ((index)*2 + 2)
 #define PARENT(index) (((index) == 0) ? (0) : (((int)(floor((((float)(index)) - 1.0) / 2.0)))))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -90,12 +90,12 @@ void buddyinit(void *vstart1, unsigned size)
 
 uint32_t buddyalloc(uint32_t size)
 {
-    unsigned index = 0, nodeszie = 0, offset = 0;
+    unsigned index = 0;
+    unsigned node_size;
+    unsigned offset = 0;
+
     if (kmem.buddy == NULL)
-    {
-        printf("kmem.buddy NULL");
         return -1;
-    }
 
     if (size <= 0)
         size = 1;
@@ -105,15 +105,17 @@ uint32_t buddyalloc(uint32_t size)
     if (kmem.buddy->longest[index] < size)
         return -1;
 
-    for (nodeszie = kmem.buddy->size; nodeszie != size; nodeszie /= 2)
+    for (node_size = kmem.buddy->size; node_size != size; node_size /= 2)
     {
-        index = kmem.buddy->longest[LEFTCHILD(index)] >= size
-                    ? LEFTCHILD(index)
-                    : RIGHTCHILD(index);
+        if (kmem.buddy->longest[LEFTCHILD(index)] >= size)
+            index = LEFTCHILD(index);
+        else
+            index = RIGHTCHILD(index);
     }
 
     kmem.buddy->longest[index] = 0;
-    offset = (index + 1) * nodeszie - kmem.buddy->size;
+    offset = (index + 1) * node_size - kmem.buddy->size;
+
     while (index)
     {
         index = PARENT(index);
