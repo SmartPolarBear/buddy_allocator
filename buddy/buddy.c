@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-20 23:20:17
+ * @ Modified time: 2019-07-20 23:27:36
  * @ Description:buddy allocator
  */
 
@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define LEFTCHILD(index) ((index)*2+1)
+#define LEFTCHILD(index) ((index)*2 + 1)
 #define RIGHTCHILD(index) ((index)*2 + 2)
 #define PARENT(index) (((index) == 0) ? (0) : (((int)(floor((((float)(index)) - 1.0) / 2.0)))))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -185,9 +185,30 @@ int main()
     //test alloc
     int off1 = buddyalloc(sizeof(teststruct_t));
     printf("alloc offset at %d\n", off1);
-
-    teststruct_t *ps1 = (teststruct_t *)kmem.buddy->longest[off1];
+    teststruct_t *ps1 = (teststruct_t *)(((void *)kmem.buddy->longest) + off1);
     printf("alloc at %p\n", (void *)ps1);
+    ps1->a = 1;
+    ps1->b = 2;
+    ps1->c = 3;
+    ps1->d = 4;
+    for (int i = 0; i < 10; i++)
+        ps1->arr[i] = i;
+    printf("ps1->a = %d;\n"
+           "ps1->b = %d;\n"
+           "ps1->c = %d;\n"
+           "ps1->d = %d;\n",
+           ps1->a,
+           ps1->b,
+           ps1->c,
+           ps1->d);
+    for (int i = 0; i < 10; i++)
+    {
+        printf("ps1->arr[%d] = %d;\n", i, ps1->arr[i]);
+    }
+    printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+    printf("buddyfree ps1\n");
+    buddyfree(off1);
+    printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
 
     free(vstart1);
     free(vstart2);
