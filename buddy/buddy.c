@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-20 23:03:05
+ * @ Modified time: 2019-07-20 23:08:41
  * @ Description:buddy allocator
  */
 
@@ -30,9 +30,8 @@ struct
     buddy_t *buddy;
 } kmem;
 
-uint32_t fixsize(uint32_t size)
+unsigned int ceilpowerof2(unsigned int v)
 {
-    unsigned int v = (unsigned int)size;
     v--;
     v |= v >> 1;
     v |= v >> 2;
@@ -40,6 +39,25 @@ uint32_t fixsize(uint32_t size)
     v |= v >> 8;
     v |= v >> 16;
     v++;
+    return v;
+}
+
+unsigned int floorpowerof2(unsigned int v)
+{
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v++;
+    v >>= 1;
+    return v;
+}
+
+uint32_t fixsize(uint32_t size)
+{
+    return ceilpowerof2(size);
 }
 
 void buddyinit(void *vstart1, unsigned size)
@@ -47,6 +65,8 @@ void buddyinit(void *vstart1, unsigned size)
     unsigned nodesize = 0;
 
     size = size / 2 / sizeof(unsigned int);
+    size = floorpowerof2(size);
+
     printf("buddyinit:size=%d\n", size);
 
     if (size < 1 || !POWER_OF_2(size))
