@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-22 14:45:27
+ * @ Modified time: 2019-07-22 15:06:43
  * @ Description:buddy allocator
  */
 
@@ -53,6 +53,8 @@ unsigned int floorpowerof2(unsigned int v)
     v |= v >> 16;
     v++;
     v >>= 1;
+
+    printf("floorpowerof2(%d)=%d\n", v);
     return v;
 }
 
@@ -64,6 +66,8 @@ uint32_t fixsize(uint32_t size)
 void buddyinit(void *mem, unsigned size)
 {
     unsigned nodesize = 0;
+
+    size = floorpowerof2(size);
 
     printf("buddyinit:size=%d\n", size);
 
@@ -189,7 +193,7 @@ typedef struct teststruct
 
 int main()
 {
-    const int testsize = 10240;
+    const int testsize = 16384;
     void *vstart1 = malloc(testsize), *vstart2 = malloc(testsize);
 
     printf("init memory block at %p,size=%d\n", vstart1, testsize);
@@ -246,7 +250,7 @@ int main()
         for (int i = 0; i < 12; i++)
         {
             p[i] = (int *)bmalloc(sizeof(int));
-            *p[i] = 110;
+            *p[i] = 2 * i + 13;
         }
 
         for (int i = 0; i < 5; i++)
@@ -260,7 +264,7 @@ int main()
         {
             bfree(p[i]);
             p[i] = (int *)bmalloc(sizeof(int));
-            *p[i] = -1;
+            *p[i] = -3 - i;
         }
 
         for (int i = 12; i < 15; i++)
