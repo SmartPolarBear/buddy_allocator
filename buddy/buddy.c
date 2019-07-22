@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-20 23:27:36
+ * @ Modified time: 2019-07-22 11:47:09
  * @ Description:buddy allocator
  */
 
@@ -183,32 +183,49 @@ int main()
     printf("init buddy.\n");
 
     //test alloc
-    int off1 = buddyalloc(sizeof(teststruct_t));
-    printf("alloc offset at %d\n", off1);
-    teststruct_t *ps1 = (teststruct_t *)(((void *)kmem.buddy->longest) + off1);
-    printf("alloc at %p\n", (void *)ps1);
-    ps1->a = 1;
-    ps1->b = 2;
-    ps1->c = 3;
-    ps1->d = 4;
-    for (int i = 0; i < 10; i++)
-        ps1->arr[i] = i;
-    printf("ps1->a = %d;\n"
-           "ps1->b = %d;\n"
-           "ps1->c = %d;\n"
-           "ps1->d = %d;\n",
-           ps1->a,
-           ps1->b,
-           ps1->c,
-           ps1->d);
-    for (int i = 0; i < 10; i++)
+    do
     {
-        printf("ps1->arr[%d] = %d;\n", i, ps1->arr[i]);
-    }
-    printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
-    printf("buddyfree ps1\n");
-    buddyfree(off1);
-    printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+        int off1 = buddyalloc(sizeof(teststruct_t));
+        printf("alloc offset at %d\n", off1);
+        teststruct_t *ps1 = (teststruct_t *)(((void *)kmem.buddy->longest) + off1);
+        printf("alloc at %p\n", (void *)ps1);
+        ps1->a = 1;
+        ps1->b = 2;
+        ps1->c = 3;
+        ps1->d = 4;
+        for (int i = 0; i < 10; i++)
+            ps1->arr[i] = i;
+        printf("ps1->a = %d;\n"
+               "ps1->b = %d;\n"
+               "ps1->c = %d;\n"
+               "ps1->d = %d;\n",
+               ps1->a,
+               ps1->b,
+               ps1->c,
+               ps1->d);
+        for (int i = 0; i < 10; i++)
+        {
+            printf("ps1->arr[%d] = %d;\n", i, ps1->arr[i]);
+        }
+        printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+        printf("buddyfree ps1\n");
+        buddyfree(off1);
+        printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+    } while (0);
+
+    //test int ptr
+    do
+    {
+        int off2 = buddyalloc(sizeof(int));
+        int *iptr = (int *)(((void *)kmem.buddy->longest) + off2);
+        *iptr = 12345;
+        printf("iptr=%p,*iptr=%d\n", (void *)iptr, *iptr);
+        printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+        printf("buddyfree iptr\n");
+        buddyfree(off2);
+        printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
+
+    } while (0);
 
     free(vstart1);
     free(vstart2);
