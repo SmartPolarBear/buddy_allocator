@@ -2,7 +2,7 @@
  * @ Author: SmartPolarBear
  * @ Create Time: 2019-07-19 23:20:06
  * @ Modified by: SmartPolarBear
- * @ Modified time: 2019-07-22 11:47:09
+ * @ Modified time: 2019-07-22 14:45:27
  * @ Description:buddy allocator
  */
 
@@ -22,6 +22,7 @@
 typedef struct buddy
 {
     unsigned size;
+    void *mem;
     unsigned longest[1];
 } buddy_t;
 
@@ -60,12 +61,9 @@ uint32_t fixsize(uint32_t size)
     return ceilpowerof2(size);
 }
 
-void buddyinit(void *vstart1, unsigned size)
+void buddyinit(void *mem, unsigned size)
 {
     unsigned nodesize = 0;
-
-    size = size / 2 / sizeof(unsigned int);
-    size = floorpowerof2(size);
 
     printf("buddyinit:size=%d\n", size);
 
@@ -75,7 +73,7 @@ void buddyinit(void *vstart1, unsigned size)
         return;
     }
 
-    kmem.buddy = (buddy_t *)vstart1;
+    kmem.buddy = (buddy_t *)malloc(4096);
     kmem.buddy->size = size;
     nodesize = 2 * size;
 
@@ -86,6 +84,7 @@ void buddyinit(void *vstart1, unsigned size)
 
         kmem.buddy->longest[i] = nodesize;
     }
+    kmem.buddy->mem = mem;
 }
 
 uint32_t buddyalloc(uint32_t size)
@@ -164,6 +163,21 @@ void buddyfree(uint32_t offset)
     }
 }
 
+void *bmalloc(unsigned size)
+{
+    unsigned offset = buddyalloc(size);
+    printf("alloc offset at %d\n", offset);
+    return ((void *)kmem.buddy->mem) + offset;
+}
+
+void bfree(void *p)
+{
+    unsigned offset = ((void *)p) - ((void *)kmem.buddy->mem);
+    printf("free offset at %d\n", offset);
+
+    buddyfree(offset);
+}
+
 typedef struct teststruct
 {
     int a;
@@ -185,9 +199,7 @@ int main()
     //test alloc
     do
     {
-        int off1 = buddyalloc(sizeof(teststruct_t));
-        printf("alloc offset at %d\n", off1);
-        teststruct_t *ps1 = (teststruct_t *)(((void *)kmem.buddy->longest) + off1);
+        teststruct_t *ps1 = (teststruct_t *)bmalloc(sizeof(teststruct_t));
         printf("alloc at %p\n", (void *)ps1);
         ps1->a = 1;
         ps1->b = 2;
@@ -209,22 +221,58 @@ int main()
         }
         printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
         printf("buddyfree ps1\n");
-        buddyfree(off1);
+        bfree(ps1);
         printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
     } while (0);
 
     //test int ptr
     do
     {
-        int off2 = buddyalloc(sizeof(int));
-        int *iptr = (int *)(((void *)kmem.buddy->longest) + off2);
+        int *iptr = (int *)bmalloc(sizeof(int));
         *iptr = 12345;
         printf("iptr=%p,*iptr=%d\n", (void *)iptr, *iptr);
         printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
         printf("buddyfree iptr\n");
-        buddyfree(off2);
+        bfree(iptr);
         printf("is kmem.buddy still complete? kmem.buddy->size=%d\n", kmem.buddy->size);
 
+    } while (0);
+
+    //continous mallocfree
+    do
+    {
+        int *p[15];
+        printf("1-12\n");
+        for (int i = 0; i < 12; i++)
+        {
+            p[i] = (int *)bmalloc(sizeof(int));
+            *p[i] = 110;
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            bfree(p[i]);
+            p[i] = (int *)bmalloc(sizeof(int));
+            *p[i] = 3 * i;
+        }
+
+        for (int i = 9; i < 12; i++)
+        {
+            bfree(p[i]);
+            p[i] = (int *)bmalloc(sizeof(int));
+            *p[i] = -1;
+        }
+
+        for (int i = 12; i < 15; i++)
+        {
+            p[i] = (int *)bmalloc(sizeof(int));
+            *p[i] = -i;
+        }
+
+        for (int i = 0; i < 15; i++)
+        {
+            printf("p[%d]is at %p, *p[%d]=%d\n", i, (void *)p[i], i, *p[i]);
+        }
     } while (0);
 
     free(vstart1);
